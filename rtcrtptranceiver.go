@@ -1,6 +1,8 @@
 package webrtc
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 )
 
@@ -14,6 +16,11 @@ type RTCRtpTransceiver struct {
 	// firedDirection   RTCRtpTransceiverDirection
 	// receptive bool
 	stopped bool
+
+	remoteCapabilities     RTCRtpParameters
+	recvDecodingParameters []RTCRtpDecodingParameters
+
+	peerConnection *RTCPeerConnection
 }
 
 func (t *RTCRtpTransceiver) setSendingTrack(track *RTCTrack) error {
@@ -27,6 +34,35 @@ func (t *RTCRtpTransceiver) setSendingTrack(track *RTCTrack) error {
 	default:
 		return errors.Errorf("Invalid state change in RTCRtpTransceiver.setSending")
 	}
+	return nil
+}
+
+func (t *RTCRtpTransceiver) start() error {
+	// Start the sender
+	sender := t.Sender
+	if sender != nil {
+		sender.Send(RTCRtpSendParameters{
+			encodings: RTCRtpEncodingParameters{
+				RTCRtpCodingParameters{SSRC: sender.Track.Ssrc, PayloadType: sender.Track.PayloadType},
+			}})
+	}
+
+	// Start the receiver
+	receiver := t.Receiver
+	if receiver != nil {
+		params := RTCRtpReceiveParameters{
+			RTCRtpParameters: t.remoteCapabilities,
+			Encodings:        t.recvDecodingParameters,
+		}
+
+		err := receiver.Receive(params)
+		if err != nil {
+			return fmt.Errorf("failed to receive: %v", err)
+		}
+
+		t.peerConnection.onTrack(receiver.Track)
+	}
+
 	return nil
 }
 
