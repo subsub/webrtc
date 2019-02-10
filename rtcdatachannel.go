@@ -128,10 +128,13 @@ func (api *API) newRTCDataChannel(params *RTCDataChannelParameters) (*RTCDataCha
 	}
 
 	d := &RTCDataChannel{
-		Label:      params.Label,
-		ID:         &params.ID,
-		ReadyState: RTCDataChannelStateConnecting,
-		api:        api,
+		Label:             params.Label,
+		ID:                &params.ID,
+		Ordered:           params.Ordered,
+		MaxPacketLifeTime: params.MaxPacketLifeTime,
+		MaxRetransmits:    params.MaxRetransmits,
+		ReadyState:        RTCDataChannelStateConnecting,
+		api:               api,
 	}
 
 	return d, nil
@@ -147,10 +150,35 @@ func (d *RTCDataChannel) open(sctpTransport *RTCSctpTransport) error {
 		return err
 	}
 
+	var channelType datachannel.ChannelType
+	var reliabilityParameteer uint32
+
+	if d.MaxPacketLifeTime == nil && d.MaxRetransmits == nil {
+		if d.Ordered {
+			channelType = datachannel.ChannelTypeReliable
+		} else {
+			channelType = datachannel.ChannelTypeReliableUnordered
+		}
+	} else if d.MaxRetransmits != nil {
+		reliabilityParameteer = uint32(*d.MaxRetransmits)
+		if d.Ordered {
+			channelType = datachannel.ChannelTypePartialReliableRexmit
+		} else {
+			channelType = datachannel.ChannelTypePartialReliableRexmitUnordered
+		}
+	} else {
+		reliabilityParameteer = uint32(*d.MaxPacketLifeTime)
+		if d.Ordered {
+			channelType = datachannel.ChannelTypePartialReliableTimed
+		} else {
+			channelType = datachannel.ChannelTypePartialReliableTimedUnordered
+		}
+	}
+
 	cfg := &datachannel.Config{
-		ChannelType:          datachannel.ChannelTypeReliable,   // TODO: Wiring
+		ChannelType:          channelType,
 		Priority:             datachannel.ChannelPriorityNormal, // TODO: Wiring
-		ReliabilityParameter: 0,                                 // TODO: Wiring
+		ReliabilityParameter: reliabilityParameteer,
 		Label:                d.Label,
 	}
 

@@ -1151,18 +1151,43 @@ func (pc *RTCPeerConnection) CreateDataChannel(label string, options *RTCDataCha
 	// implements all options. RTCDataChannelParameters implements the
 	// options that actually have an effect at this point.
 	params := &RTCDataChannelParameters{
-		Label: label,
+		Label:   label,
+		Ordered: true,
 	}
 
 	// https://w3c.github.io/webrtc-pc/#peer-to-peer-data-api (Step #19)
-	if options == nil ||
-		options.ID == nil {
+	if options == nil || options.ID == nil {
 		var err error
 		if params.ID, err = pc.generateDataChannelID(true); err != nil {
 			return nil, err
 		}
 	} else {
 		params.ID = *options.ID
+	}
+
+	// Ordered indicates if data is allowed to be delivered out of order. The
+	// default value of true, guarantees that data will be delivered in order.
+	if options == nil || options.Ordered == nil {
+		params.Ordered = true
+	} else {
+		params.Ordered = *options.Ordered
+	}
+
+	if options != nil {
+		// https://w3c.github.io/webrtc-pc/#peer-to-peer-data-api (Step #7)
+		if options.MaxPacketLifeTime != nil {
+			params.MaxPacketLifeTime = options.MaxPacketLifeTime
+		}
+
+		// https://w3c.github.io/webrtc-pc/#peer-to-peer-data-api (Step #8)
+		if options.MaxRetransmits != nil {
+			params.MaxRetransmits = options.MaxRetransmits
+		}
+
+		// https://w3c.github.io/webrtc-pc/#peer-to-peer-data-api (Step #9)
+		if options.Ordered != nil {
+			params.Ordered = *options.Ordered
+		}
 	}
 
 	// TODO: Re-enable validation of the parameters once they are implemented.
@@ -1257,6 +1282,11 @@ func (pc *RTCPeerConnection) CreateDataChannel(label string, options *RTCDataCha
 	d, err := pc.api.newRTCDataChannel(params)
 	if err != nil {
 		return nil, err
+	}
+
+	// https://w3c.github.io/webrtc-pc/#peer-to-peer-data-api (Step #16)
+	if d.MaxPacketLifeTime != nil && d.MaxRetransmits != nil {
+		return nil, &rtcerr.TypeError{Err: ErrRetransmitsOrPacketLifeTime}
 	}
 
 	// Remember datachannel
