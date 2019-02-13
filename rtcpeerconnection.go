@@ -1165,15 +1165,13 @@ func (pc *RTCPeerConnection) CreateDataChannel(label string, options *RTCDataCha
 		params.ID = *options.ID
 	}
 
-	// Ordered indicates if data is allowed to be delivered out of order. The
-	// default value of true, guarantees that data will be delivered in order.
-	if options == nil || options.Ordered == nil {
-		params.Ordered = true
-	} else {
-		params.Ordered = *options.Ordered
-	}
-
 	if options != nil {
+		// Ordered indicates if data is allowed to be delivered out of order. The
+		// default value of true, guarantees that data will be delivered in order.
+		if options.Ordered != nil {
+			params.Ordered = *options.Ordered
+		}
+
 		// https://w3c.github.io/webrtc-pc/#peer-to-peer-data-api (Step #7)
 		if options.MaxPacketLifeTime != nil {
 			params.MaxPacketLifeTime = options.MaxPacketLifeTime
