@@ -7,7 +7,7 @@ import (
 	janus "github.com/notedit/janus-go"
 	"github.com/pions/webrtc"
 	"github.com/pions/webrtc/examples/util"
-	"github.com/pions/webrtc/examples/util/gstreamer-src"
+	gst "github.com/pions/webrtc/examples/util/gstreamer-src"
 	"github.com/pions/webrtc/pkg/ice"
 )
 
@@ -40,15 +40,15 @@ func main() {
 	webrtc.RegisterDefaultCodecs()
 
 	// Prepare the configuration
-	config := webrtc.RTCConfiguration{
-		IceServers: []webrtc.RTCIceServer{
+	config := webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{
 			{
 				URLs: []string{"stun:stun.l.google.com:19302"},
 			},
 		},
 	}
 
-	// Create a new RTCPeerConnection
+	// Create a new PeerConnection
 	peerConnection, err := webrtc.New(config)
 	util.Check(err)
 
@@ -57,13 +57,13 @@ func main() {
 	})
 
 	// Create a audio track
-	opusTrack, err := peerConnection.NewRTCSampleTrack(webrtc.DefaultPayloadTypeOpus, "audio", "pion1")
+	opusTrack, err := peerConnection.NewSampleTrack(webrtc.DefaultPayloadTypeOpus, "audio", "pion1")
 	util.Check(err)
 	_, err = peerConnection.AddTrack(opusTrack)
 	util.Check(err)
 
 	// Create a video track
-	vp8Track, err := peerConnection.NewRTCSampleTrack(webrtc.DefaultPayloadTypeVP8, "video", "pion2")
+	vp8Track, err := peerConnection.NewSampleTrack(webrtc.DefaultPayloadTypeVP8, "video", "pion2")
 	util.Check(err)
 	_, err = peerConnection.AddTrack(vp8Track)
 	util.Check(err)
@@ -103,8 +103,8 @@ func main() {
 	util.Check(err)
 
 	if msg.Jsep != nil {
-		err = peerConnection.SetRemoteDescription(webrtc.RTCSessionDescription{
-			Type: webrtc.RTCSdpTypeAnswer,
+		err = peerConnection.SetRemoteDescription(webrtc.SessionDescription{
+			Type: webrtc.SDPTypeAnswer,
 			Sdp:  msg.Jsep["sdp"].(string),
 		})
 		util.Check(err)

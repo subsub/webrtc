@@ -40,15 +40,15 @@ func main() {
 	webrtc.RegisterDefaultCodecs()
 
 	// Prepare the configuration
-	config := webrtc.RTCConfiguration{
-		IceServers: []webrtc.RTCIceServer{
+	config := webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{
 			{
 				URLs: []string{"stun:stun.l.google.com:19302"},
 			},
 		},
 	}
 
-	// Create a new RTCPeerConnection
+	// Create a new PeerConnection
 	peerConnection, err := webrtc.New(config)
 	util.Check(err)
 
@@ -56,7 +56,7 @@ func main() {
 		fmt.Printf("Connection State has changed %s \n", connectionState.String())
 	})
 
-	peerConnection.OnTrack(func(track *webrtc.RTCTrack) {
+	peerConnection.OnTrack(func(track *webrtc.Track) {
 		if track.Codec.Name == webrtc.Opus {
 			return
 		}
@@ -98,8 +98,8 @@ func main() {
 	util.Check(err)
 
 	if msg.Jsep != nil {
-		err = peerConnection.SetRemoteDescription(webrtc.RTCSessionDescription{
-			Type: webrtc.RTCSdpTypeOffer,
+		err = peerConnection.SetRemoteDescription(webrtc.SessionDescription{
+			Type: webrtc.SDPTypeOffer,
 			Sdp:  msg.Jsep["sdp"].(string),
 		})
 		util.Check(err)
